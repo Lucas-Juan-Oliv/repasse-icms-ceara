@@ -29,8 +29,13 @@ st.set_page_config(
 # ==================================================
 
 def normalizar_municipio(nome):
+
     nome = str(nome).strip().upper()
-    nome = unicodedata.normalize("NFKD", nome)
+
+    nome = unicodedata.normalize(
+        "NFKD",
+        nome
+    )
 
     nome = "".join(
         caractere
@@ -38,10 +43,13 @@ def normalizar_municipio(nome):
         if not unicodedata.combining(caractere)
     )
 
-    return " ".join(nome.split())
+    return " ".join(
+        nome.split()
+    )
 
 
 def formatar_moeda(valor):
+
     texto = f"{valor:,.2f}"
 
     texto = (
@@ -58,7 +66,9 @@ def formatar_moeda(valor):
 # TÍTULO
 # ==================================================
 
-st.title("Repasse de ICMS aos Municípios do Ceará")
+st.title(
+    "Repasse de ICMS aos Municípios do Ceará"
+)
 
 st.write(
     "Cálculo estimado da cota-parte municipal do ICMS "
@@ -128,19 +138,41 @@ municipio_chave = normalizar_municipio(
 # ==================================================
 
 dados_municipio = indices.loc[
-    indices["municipio_chave"] == municipio_chave
+    indices["municipio_chave"]
+    == municipio_chave
 ].iloc[0]
 
-indice = dados_municipio["indice_2026"]
+indice = dados_municipio[
+    "indice_2026"
+]
 
-indice_vaf = dados_municipio["indice_vaf"]
-indice_educacao = dados_municipio["indice_educacao"]
-indice_saude = dados_municipio["indice_saude"]
-indice_meio_ambiente = dados_municipio["indice_meio_ambiente"]
+indice_vaf = dados_municipio[
+    "indice_vaf"
+]
 
-vaf_2023 = dados_municipio["vaf_2023"]
-vaf_2024 = dados_municipio["vaf_2024"]
-media_vaf = dados_municipio["media_vaf"]
+indice_educacao = dados_municipio[
+    "indice_educacao"
+]
+
+indice_saude = dados_municipio[
+    "indice_saude"
+]
+
+indice_meio_ambiente = dados_municipio[
+    "indice_meio_ambiente"
+]
+
+vaf_2023 = dados_municipio[
+    "vaf_2023"
+]
+
+vaf_2024 = dados_municipio[
+    "vaf_2024"
+]
+
+media_vaf = dados_municipio[
+    "media_vaf"
+]
 
 
 # ==================================================
@@ -164,20 +196,44 @@ resultado = calcular_repasse(
 
 
 # ==================================================
+# BASE EDUCACIONAL DE REFERÊNCIA
+# ==================================================
+
+base_educacional_referencia = carregar_base()
+
+posicao_educacional_referencia = (
+    localizar_municipio(
+        base_educacional_referencia,
+        municipio
+    )
+)
+
+dados_educacionais_referencia = (
+    base_educacional_referencia.loc[
+        posicao_educacional_referencia
+    ]
+)
+
+
+# ==================================================
 # DADOS UTILIZADOS
 # ==================================================
 
-st.subheader("Dados utilizados")
+st.subheader(
+    "Dados utilizados"
+)
 
 col1, col2 = st.columns(2)
 
 with col1:
+
     st.metric(
         "Base ICMS dos municípios",
         formatar_moeda(base)
     )
 
 with col2:
+
     st.metric(
         "Índice final de participação do município",
         f"{indice:.7f}%"
@@ -188,7 +244,9 @@ with col2:
 # COMPOSIÇÃO DO ÍNDICE
 # ==================================================
 
-st.subheader("Composição do índice municipal")
+st.subheader(
+    "Composição do índice municipal"
+)
 
 st.write(
     "O índice final de participação é composto por quatro "
@@ -199,27 +257,323 @@ st.write(
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
+
     st.metric(
         "Índice do Valor Adicionado (VAF) — peso 65%",
         f"{indice_vaf:.7f}%"
     )
 
 with col2:
+
     st.metric(
         "Índice de Educação — peso 18%",
         f"{indice_educacao:.7f}%"
     )
 
 with col3:
+
     st.metric(
         "Índice de Saúde — peso 15%",
         f"{indice_saude:.7f}%"
     )
 
 with col4:
+
     st.metric(
         "Índice de Meio Ambiente — peso 2%",
         f"{indice_meio_ambiente:.7f}%"
+    )
+
+
+# ==================================================
+# INDICADORES EDUCACIONAIS DE REFERÊNCIA
+# ==================================================
+
+with st.expander(
+    "Indicadores educacionais utilizados na simulação"
+):
+
+    st.write(
+        """
+        Os valores abaixo correspondem aos dados observados
+        utilizados como ponto de partida da simulação para o
+        município selecionado.
+
+        Os controles do simulador aplicam alterações sobre esses
+        valores. Em seguida, o IQE é recalculado considerando os
+        184 municípios.
+        """
+    )
+
+    # ----------------------------------------------
+    # IQA
+    # ----------------------------------------------
+
+    st.markdown(
+        "### IQA — dados de referência"
+    )
+
+    st.caption(
+        "Indicadores de 2024 utilizados como ponto de partida "
+        "para a simulação do IQA."
+    )
+
+    tabela_iqa = pd.DataFrame(
+        {
+            "Indicador": [
+                "Proficiência",
+                "Participação",
+                "Abaixo do Básico",
+                "Básico",
+                "Proficiente",
+                "Avançado"
+            ],
+
+            "Língua Portuguesa": [
+                dados_educacionais_referencia[
+                    "iqa_proficiencia_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_participacao_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_lp_abaixo_basico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_lp_basico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_lp_proficiente_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_lp_avancado_2024"
+                ]
+            ],
+
+            "Matemática": [
+                dados_educacionais_referencia[
+                    "iqa_proficiencia_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_participacao_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_mat_abaixo_basico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_mat_basico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_mat_proficiente_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqa_mat_avancado_2024"
+                ]
+            ]
+        }
+    )
+
+    st.dataframe(
+        tabela_iqa.style.format(
+            {
+                "Língua Portuguesa": "{:.4f}",
+                "Matemática": "{:.4f}"
+            }
+        ),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.caption(
+        "Participação e níveis de desempenho são expressos em %. "
+        "A proficiência é apresentada na escala da avaliação."
+    )
+
+    # ----------------------------------------------
+    # IQF5
+    # ----------------------------------------------
+
+    st.markdown(
+        "### IQF — 5º ano"
+    )
+
+    tabela_iqf5 = pd.DataFrame(
+        {
+            "Indicador": [
+                "Proficiência",
+                "Participação",
+                "Muito Crítico",
+                "Adequado"
+            ],
+
+            "Língua Portuguesa": [
+                dados_educacionais_referencia[
+                    "iqf5_proficiencia_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_participacao_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_lp_muito_critico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_lp_adequado_2024"
+                ]
+            ],
+
+            "Matemática": [
+                dados_educacionais_referencia[
+                    "iqf5_proficiencia_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_participacao_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_mat_muito_critico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf5_mat_adequado_2024"
+                ]
+            ]
+        }
+    )
+
+    st.dataframe(
+        tabela_iqf5.style.format(
+            {
+                "Língua Portuguesa": "{:.4f}",
+                "Matemática": "{:.4f}"
+            }
+        ),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.caption(
+        "Participação, Muito Crítico e Adequado são expressos "
+        "em %. A proficiência é apresentada na escala da avaliação."
+    )
+
+    # ----------------------------------------------
+    # IQF9
+    # ----------------------------------------------
+
+    st.markdown(
+        "### IQF — 9º ano"
+    )
+
+    tabela_iqf9 = pd.DataFrame(
+        {
+            "Indicador": [
+                "Proficiência",
+                "Participação",
+                "Muito Crítico",
+                "Adequado"
+            ],
+
+            "Língua Portuguesa": [
+                dados_educacionais_referencia[
+                    "iqf9_proficiencia_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_participacao_lp_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_lp_muito_critico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_lp_adequado_2024"
+                ]
+            ],
+
+            "Matemática": [
+                dados_educacionais_referencia[
+                    "iqf9_proficiencia_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_participacao_mat_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_mat_muito_critico_2024"
+                ],
+
+                dados_educacionais_referencia[
+                    "iqf9_mat_adequado_2024"
+                ]
+            ]
+        }
+    )
+
+    st.dataframe(
+        tabela_iqf9.style.format(
+            {
+                "Língua Portuguesa": "{:.4f}",
+                "Matemática": "{:.4f}"
+            }
+        ),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.caption(
+        "Participação, Muito Crítico e Adequado são expressos "
+        "em %. A proficiência é apresentada na escala da avaliação."
+    )
+
+    # ----------------------------------------------
+    # APROVAÇÃO
+    # ----------------------------------------------
+
+    st.markdown(
+        "### Aprovação"
+    )
+
+    taxa_aprovacao_referencia = (
+        dados_educacionais_referencia[
+            "taxa_aprovacao_2024"
+        ]
+    )
+
+    st.metric(
+        "Taxa de aprovação — 2024",
+        f"{taxa_aprovacao_referencia:.4f}%"
+    )
+
+    st.info(
+        """
+        **Relação com o simulador**
+
+        O controle de proficiência aplica uma variação percentual
+        sobre a proficiência apresentada acima.
+
+        Participação, Muito Crítico, Adequado e aprovação são
+        alterados em pontos percentuais.
+
+        No IQA, a migração desloca uma proporção dos estudantes
+        de Abaixo do Básico para Básico, de Básico para Proficiente
+        e de Proficiente para Avançado.
+        """
     )
 
 
@@ -239,6 +593,7 @@ with st.expander(
                 "Saúde",
                 "Meio Ambiente"
             ],
+
             "Participação": [
                 indice_vaf,
                 indice_educacao,
@@ -280,18 +635,21 @@ with st.expander(
     col1, col2, col3 = st.columns(3)
 
     with col1:
+
         st.metric(
             "VAF 2023",
             formatar_moeda(vaf_2023)
         )
 
     with col2:
+
         st.metric(
             "VAF 2024",
             formatar_moeda(vaf_2024)
         )
 
     with col3:
+
         st.metric(
             "Média do VAF",
             formatar_moeda(media_vaf)
@@ -302,11 +660,14 @@ with st.expander(
 # RESULTADO
 # ==================================================
 
-st.subheader("Resultado calculado")
+st.subheader(
+    "Resultado calculado"
+)
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
+
     st.metric(
         "Repasse bruto",
         formatar_moeda(
@@ -315,14 +676,16 @@ with col1:
     )
 
 with col2:
+
     st.metric(
-        "Retenção para o FUNDEB",
+        "Retenção para o Fundeb",
         formatar_moeda(
             resultado["fundeb"]
         )
     )
 
 with col3:
+
     st.metric(
         "Repasse líquido",
         formatar_moeda(
@@ -337,11 +700,13 @@ with col3:
 
 repasse_oficial = repasses[
     (
-        repasses["municipio_chave"] == municipio_chave
+        repasses["municipio_chave"]
+        == municipio_chave
     )
     &
     (
-        repasses["mes"] == mes
+        repasses["mes"]
+        == mes
     )
 ]
 
@@ -353,8 +718,9 @@ repasse_oficial = repasses[
 if not repasse_oficial.empty:
 
     valor_oficial = (
-        repasse_oficial["repasse_sefaz"]
-        .iloc[0]
+        repasse_oficial[
+            "repasse_sefaz"
+        ].iloc[0]
     )
 
     diferenca = (
@@ -363,36 +729,45 @@ if not repasse_oficial.empty:
     )
 
     if valor_oficial != 0:
+
         diferenca_percentual = (
             abs(diferenca)
             / valor_oficial
         ) * 100
+
     else:
+
         diferenca_percentual = 0
 
-    st.subheader("Comparação com a SEFAZ")
+    st.subheader(
+        "Comparação com a SEFAZ"
+    )
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
+
         st.metric(
             "Repasse realizado pela SEFAZ",
             formatar_moeda(valor_oficial)
         )
 
     with col2:
+
         st.metric(
             "Diferença",
             formatar_moeda(diferenca)
         )
 
     with col3:
+
         st.metric(
             "Diferença percentual",
             f"{diferenca_percentual:.4f}%"
         )
 
     if mes == "Junho":
+
         st.warning(
             """
             Os valores publicados pela SEFAZ para junho de 2026
@@ -414,7 +789,7 @@ else:
 
 
 # ==================================================
-# GRÁFICO MENSAL: CALCULADO X SEFAZ
+# GRÁFICO MENSAL
 # ==================================================
 
 st.subheader(
@@ -440,15 +815,17 @@ dados_grafico = []
 for mes_grafico in ordem_meses:
 
     linha_base = bases[
-        bases["mes"] == mes_grafico
+        bases["mes"]
+        == mes_grafico
     ]
 
     if linha_base.empty:
         continue
 
     base_mes = (
-        linha_base["base_icms"]
-        .iloc[0]
+        linha_base[
+            "base_icms"
+        ].iloc[0]
     )
 
     calculo_mes = calcular_repasse(
@@ -471,8 +848,9 @@ for mes_grafico in ordem_meses:
     if not linha_sefaz.empty:
 
         valor_sefaz = (
-            linha_sefaz["repasse_sefaz"]
-            .iloc[0]
+            linha_sefaz[
+                "repasse_sefaz"
+            ].iloc[0]
         )
 
     else:
@@ -488,6 +866,7 @@ for mes_grafico in ordem_meses:
             "SEFAZ": valor_sefaz
         }
     )
+
 
 grafico_mensal = pd.DataFrame(
     dados_grafico
@@ -517,7 +896,7 @@ st.line_chart(
 st.caption(
     "Calculado: valor obtido pela aplicação utilizando a "
     "base mensal e o índice oficial de participação. "
-    "SEFAZ: valor efetivamente publicado para o município."
+    "SEFAZ: valor publicado para o município."
 )
 
 
@@ -576,7 +955,9 @@ with st.form(
     # IQA
     # ----------------------------------------------
 
-    st.markdown("### IQA")
+    st.markdown(
+        "### IQA"
+    )
 
     st.caption(
         "Defina as alterações relacionadas ao desempenho "
@@ -592,11 +973,7 @@ with st.form(
             min_value=0.0,
             max_value=30.0,
             value=5.0,
-            step=0.5,
-            help=(
-                "Aumento percentual relativo aplicado às "
-                "proficiências de Língua Portuguesa e Matemática."
-            )
+            step=0.5
         )
 
     with col2:
@@ -606,11 +983,7 @@ with st.form(
             min_value=0.0,
             max_value=20.0,
             value=1.0,
-            step=0.5,
-            help=(
-                "Aumento em pontos percentuais da participação "
-                "nas avaliações."
-            )
+            step=0.5
         )
 
     with col3:
@@ -620,18 +993,16 @@ with st.form(
             min_value=0.0,
             max_value=50.0,
             value=10.0,
-            step=1.0,
-            help=(
-                "Percentual dos estudantes de cada nível que é "
-                "deslocado para o nível imediatamente superior."
-            )
+            step=1.0
         )
 
     # ----------------------------------------------
     # IQF
     # ----------------------------------------------
 
-    st.markdown("### IQF5 e IQF9")
+    st.markdown(
+        "### IQF5 e IQF9"
+    )
 
     st.caption(
         "As alterações abaixo são aplicadas aos indicadores "
@@ -680,7 +1051,9 @@ with st.form(
     # APROVAÇÃO
     # ----------------------------------------------
 
-    st.markdown("### Aprovação")
+    st.markdown(
+        "### Aprovação"
+    )
 
     aumento_aprovacao = st.slider(
         "Aumento da taxa de aprovação (p.p.)",
@@ -690,10 +1063,12 @@ with st.form(
         step=0.1
     )
 
-    executar_simulacao = st.form_submit_button(
-        "Executar simulação",
-        type="primary",
-        use_container_width=True
+    executar_simulacao = (
+        st.form_submit_button(
+            "Executar simulação",
+            type="primary",
+            use_container_width=True
+        )
     )
 
 
@@ -710,30 +1085,23 @@ if executar_simulacao:
         ):
 
             # ------------------------------------------
-            # CARREGAR BASE EDUCACIONAL
-            # ------------------------------------------
-
-            base_educacional = carregar_base()
-
-            # ------------------------------------------
             # CENÁRIO OBSERVADO
             # ------------------------------------------
 
             observado = calcular_pipeline(
-                base_educacional
+                base_educacional_referencia
             )
 
             # ------------------------------------------
-            # CRIAR CENÁRIO SIMULADO
+            # CENÁRIO SIMULADO
             # ------------------------------------------
 
             base_educacional_simulada = criar_cenario(
 
-                base=base_educacional,
+                base=base_educacional_referencia,
 
                 municipio=municipio,
 
-                # IQA
                 iqa_aumento_proficiencia=(
                     iqa_aumento_proficiencia
                 ),
@@ -746,7 +1114,6 @@ if executar_simulacao:
                     iqa_migracao
                 ),
 
-                # IQF
                 iqf_aumento_proficiencia=(
                     iqf_aumento_proficiencia
                 ),
@@ -763,7 +1130,6 @@ if executar_simulacao:
                     iqf_aumento_adequado
                 ),
 
-                # APROVAÇÃO
                 aumento_aprovacao_pp=(
                     aumento_aprovacao
                 )
@@ -773,9 +1139,9 @@ if executar_simulacao:
                 base_educacional_simulada
             )
 
-            # ==========================================
+            # ------------------------------------------
             # LOCALIZAR MUNICÍPIO
-            # ==========================================
+            # ------------------------------------------
 
             posicao_observado = localizar_municipio(
                 observado,
@@ -787,89 +1153,81 @@ if executar_simulacao:
                 municipio
             )
 
-            dados_observados = observado.loc[
+            atual = observado.loc[
                 posicao_observado
             ]
 
-            dados_simulados = simulado.loc[
+            novo = simulado.loc[
                 posicao_simulado
             ]
 
-            # ==========================================
+            # ------------------------------------------
             # INDICADORES
-            # ==========================================
+            # ------------------------------------------
 
-            iqa_atual = dados_observados[
+            iqa_atual = atual[
                 "iqa_transicao_2025"
             ]
 
-            iqa_simulado = dados_simulados[
+            iqa_simulado = novo[
                 "iqa_transicao_2025"
             ]
 
-            iqf5_atual = dados_observados[
+            iqf5_atual = atual[
                 "iqf5_2025"
             ]
 
-            iqf5_simulado = dados_simulados[
+            iqf5_simulado = novo[
                 "iqf5_2025"
             ]
 
-            iqf9_atual = dados_observados[
+            iqf9_atual = atual[
                 "iqf9_2025"
             ]
 
-            iqf9_simulado = dados_simulados[
+            iqf9_simulado = novo[
                 "iqf9_2025"
             ]
 
-            iqe_d_atual = dados_observados[
-                "iqe_d_2025"
-            ]
-
-            iqe_d_simulado = dados_simulados[
-                "iqe_d_2025"
-            ]
-
-            iqe_s_atual = dados_observados[
-                "iqe_s_2025"
-            ]
-
-            iqe_s_simulado = dados_simulados[
-                "iqe_s_2025"
-            ]
-
-            iqe_atual = dados_observados[
-                "iqe_final_2025"
-            ]
-
-            iqe_simulado = dados_simulados[
-                "iqe_final_2025"
-            ]
-
-            aprovacao_atual = dados_observados[
+            aprovacao_atual = atual[
                 "taxa_aprovacao_2024"
             ]
 
-            aprovacao_simulada = dados_simulados[
+            aprovacao_simulada = novo[
                 "taxa_aprovacao_2024"
             ]
 
-            educacao_calculada_atual = (
-                dados_observados[
-                    "coeficiente_educacao_calculado"
-                ]
-            )
+            iqe_d_atual = atual[
+                "iqe_d_2025"
+            ]
 
-            educacao_simulada = (
-                dados_simulados[
-                    "coeficiente_educacao_calculado"
-                ]
-            )
+            iqe_d_simulado = novo[
+                "iqe_d_2025"
+            ]
 
-            # ==========================================
-            # DIFERENÇA EDUCAÇÃO
-            # ==========================================
+            iqe_s_atual = atual[
+                "iqe_s_2025"
+            ]
+
+            iqe_s_simulado = novo[
+                "iqe_s_2025"
+            ]
+
+            iqe_atual = atual[
+                "iqe_final_2025"
+            ]
+
+            iqe_simulado = novo[
+                "iqe_final_2025"
+            ]
+
+            educacao_calculada_atual = atual[
+                "coeficiente_educacao_calculado"
+            ]
+
+            educacao_simulada = novo[
+                "coeficiente_educacao_calculado"
+            ]
 
             diferenca_educacao = (
                 educacao_simulada
@@ -881,15 +1239,16 @@ if executar_simulacao:
                 variacao_educacao_percentual = (
                     diferenca_educacao
                     / educacao_calculada_atual
-                ) * 100
+                    * 100
+                )
 
             else:
 
                 variacao_educacao_percentual = 0
 
-            # ==========================================
-            # ÍNDICE GERAL SIMULADO
-            # ==========================================
+            # ------------------------------------------
+            # ÍNDICE GERAL
+            # ------------------------------------------
 
             indice_geral_atual = indice
 
@@ -903,17 +1262,13 @@ if executar_simulacao:
                 - indice_geral_atual
             )
 
-        # ==============================================
-        # SIMULAÇÃO CONCLUÍDA
-        # ==============================================
-
         st.success(
             "Simulação concluída."
         )
 
-        # ==============================================
+        # ==================================================
         # RESULTADOS EDUCACIONAIS
-        # ==============================================
+        # ==================================================
 
         st.subheader(
             "2. Resultado dos indicadores educacionais"
@@ -969,9 +1324,9 @@ if executar_simulacao:
             hide_index=True
         )
 
-        # ==============================================
+        # ------------------------------------------
         # APROVAÇÃO
-        # ==============================================
+        # ------------------------------------------
 
         col1, col2, col3 = st.columns(3)
 
@@ -999,9 +1354,9 @@ if executar_simulacao:
                 )
             )
 
-        # ==============================================
+        # ==================================================
         # IMPACTO NO ÍNDICE
-        # ==============================================
+        # ==================================================
 
         st.subheader(
             "3. Impacto no índice de participação"
@@ -1011,7 +1366,9 @@ if executar_simulacao:
             "#### Componente Educação"
         )
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4 = (
+            st.columns(4)
+        )
 
         with col1:
 
@@ -1041,9 +1398,9 @@ if executar_simulacao:
                 f"{variacao_educacao_percentual:+.4f}%"
             )
 
-        # ==============================================
+        # ------------------------------------------
         # ÍNDICE GERAL
-        # ==============================================
+        # ------------------------------------------
 
         st.markdown(
             "#### Índice geral"
@@ -1072,9 +1429,9 @@ if executar_simulacao:
                 f"{diferenca_indice:+.7f} p.p."
             )
 
-        # ==============================================
+        # ==================================================
         # COMPOSIÇÃO ATUAL X SIMULADA
-        # ==============================================
+        # ==================================================
 
         with st.expander(
             "Visualizar composição atual e simulada"
@@ -1098,7 +1455,10 @@ if executar_simulacao:
 
                     "Simulado": [
                         indice_vaf,
-                        educacao_simulada,
+                        (
+                            indice_educacao
+                            + diferenca_educacao
+                        ),
                         indice_saude,
                         indice_meio_ambiente
                     ]
@@ -1125,9 +1485,9 @@ if executar_simulacao:
                 grafico_composicao_simulada
             )
 
-        # ==============================================
+        # ==================================================
         # IMPACTO FINANCEIRO
-        # ==============================================
+        # ==================================================
 
         st.subheader(
             "4. Impacto financeiro potencial"
@@ -1157,13 +1517,8 @@ if executar_simulacao:
             base_icms_simulacao = (
                 linha_base_simulacao[
                     "base_icms"
-                ]
-                .iloc[0]
+                ].iloc[0]
             )
-
-            # ------------------------------------------
-            # REPASSE ATUAL
-            # ------------------------------------------
 
             repasse_atual_simulacao = (
                 calcular_repasse(
@@ -1174,10 +1529,6 @@ if executar_simulacao:
                 )
             )
 
-            # ------------------------------------------
-            # REPASSE SIMULADO
-            # ------------------------------------------
-
             repasse_novo_simulacao = (
                 calcular_repasse(
                     base_icms=base_icms_simulacao,
@@ -1186,10 +1537,6 @@ if executar_simulacao:
                     )
                 )
             )
-
-            # ------------------------------------------
-            # DIFERENÇAS
-            # ------------------------------------------
 
             ganho_bruto = (
                 repasse_novo_simulacao[
@@ -1267,13 +1614,14 @@ if executar_simulacao:
             resultados_financeiros
         )
 
-        # ==============================================
+        # ==================================================
         # TABELA FINANCEIRA
-        # ==============================================
+        # ==================================================
 
         colunas_monetarias = [
             coluna
-            for coluna in tabela_financeira.columns
+            for coluna
+            in tabela_financeira.columns
             if coluna != "Mês"
         ]
 
@@ -1282,7 +1630,8 @@ if executar_simulacao:
                 lambda valor:
                 formatar_moeda(valor)
             )
-            for coluna in colunas_monetarias
+            for coluna
+            in colunas_monetarias
         }
 
         st.dataframe(
@@ -1293,9 +1642,9 @@ if executar_simulacao:
             hide_index=True
         )
 
-        # ==============================================
+        # ==================================================
         # TOTAIS
-        # ==============================================
+        # ==================================================
 
         total_bruto_atual = (
             tabela_financeira[
@@ -1345,9 +1694,9 @@ if executar_simulacao:
             ].sum()
         )
 
-        # ==============================================
+        # ==================================================
         # RESULTADO ACUMULADO
-        # ==============================================
+        # ==================================================
 
         st.subheader(
             "5. Resultado acumulado — janeiro a junho"
@@ -1411,9 +1760,9 @@ if executar_simulacao:
             )
         )
 
-        # ==============================================
+        # ==================================================
         # GRÁFICO FINANCEIRO
-        # ==============================================
+        # ==================================================
 
         st.subheader(
             "6. Comparação mensal do cenário"
@@ -1448,9 +1797,9 @@ if executar_simulacao:
             grafico_simulacao
         )
 
-        # ==============================================
-        # VALIDAÇÃO MATEMÁTICA
-        # ==============================================
+        # ==================================================
+        # VALIDAÇÃO
+        # ==================================================
 
         with st.expander(
             "Validação matemática da simulação"
@@ -1506,54 +1855,50 @@ if executar_simulacao:
             )
 
             if (
-                abs(
+                len(simulado) == 184
+                and abs(
                     soma_iqe_simulado - 1
-                ) < 1e-9
-                and
-                abs(
+                ) <= 1e-9
+                and abs(
                     soma_educacao_simulada - 18
-                ) < 1e-9
+                ) <= 1e-9
             ):
 
                 st.success(
-                    "A estrutura relativa da distribuição "
-                    "foi preservada."
+                    "Todos os testes estruturais passaram."
                 )
 
             else:
 
                 st.error(
-                    "A simulação apresentou uma inconsistência "
-                    "na distribuição."
+                    "A simulação apresentou inconsistência "
+                    "em uma das validações estruturais."
                 )
 
-        # ==============================================
-        # NOTA METODOLÓGICA
-        # ==============================================
+        # ==================================================
+        # OBSERVAÇÃO METODOLÓGICA
+        # ==================================================
 
         st.warning(
             """
-            **Interpretação dos resultados**
+            **Interpretação do cenário**
 
-            A simulação altera os indicadores educacionais do
-            município selecionado e recalcula o IQE considerando
-            os 184 municípios.
+            O resultado representa um exercício contrafactual.
 
-            O impacto financeiro é estimado mantendo constantes
-            os componentes VAF, Saúde e Meio Ambiente e utilizando
-            as bases mensais de ICMS disponíveis para janeiro a
-            junho de 2026.
+            A alteração dos indicadores de um município modifica
+            sua posição relativa em relação aos demais municípios.
+            Por isso, o IQE é recalculado para os 184 municípios.
 
-            Portanto, o resultado representa um cenário
-            contrafactual e não uma previsão do valor que o
-            município efetivamente receberá em períodos futuros.
+            A simulação não afirma que determinada política pública
+            produzirá necessariamente os valores selecionados nos
+            controles, nem representa uma previsão de receita.
             """
         )
 
     except Exception as erro:
 
         st.error(
-            "Não foi possível executar a simulação."
+            "Ocorreu um erro durante a simulação."
         )
 
         st.exception(
@@ -1565,52 +1910,52 @@ if executar_simulacao:
 # METODOLOGIA
 # ==================================================
 
-st.divider()
-
 with st.expander(
     "Como o repasse é calculado?"
 ):
 
-    st.write(
+    st.markdown(
         """
-        A aplicação utiliza a base mensal de ICMS destinada
-        à participação dos municípios e o índice oficial de
-        participação do município selecionado.
-        """
-    )
+        O cálculo apresentado pela aplicação segue a estrutura da
+        cota-parte municipal do ICMS.
 
-    st.latex(
-        r"""
-        Repasse\ Bruto =
-        Base\ ICMS
-        \times 25\%
-        \times
-        \frac{Indice\ Municipal}{100}
-        """
-    )
+        **1. Base mensal do ICMS**
 
-    st.latex(
-        r"""
-        Retencao\ Fundeb =
-        Repasse\ Bruto
-        \times 20\%
-        """
-    )
+        A aplicação utiliza a base mensal de ICMS destinada ao
+        cálculo da participação dos municípios.
 
-    st.latex(
-        r"""
-        Repasse\ Liquido =
-        Repasse\ Bruto
-        \times 80\%
-        """
-    )
+        **2. Cota-parte municipal**
 
-    st.write(
-        """
-        O repasse bruto representa a parcela municipal antes
-        da retenção destinada ao Fundeb. A aplicação apresenta
-        separadamente o valor destinado ao fundo e o valor
-        líquido resultante.
+        Do montante considerado, 25% correspondem à parcela
+        destinada aos municípios.
+
+        **3. Índice municipal**
+
+        A parcela municipal é distribuída conforme o índice de
+        participação de cada município.
+
+        O índice utilizado para 2026 é composto por:
+
+        - Valor Adicionado Fiscal (VAF): 65%;
+        - Educação: 18%;
+        - Saúde: 15%;
+        - Meio Ambiente: 2%.
+
+        **4. Repasse bruto**
+
+        A aplicação calcula:
+
+        `Base ICMS × 25% × índice municipal`
+
+        **5. Retenção para o Fundeb**
+
+        Sobre o repasse bruto municipal é considerada a retenção
+        de 20% destinada ao Fundeb.
+
+        **6. Repasse líquido**
+
+        O valor líquido corresponde ao repasse bruto após a
+        retenção considerada para o Fundeb.
         """
     )
 
@@ -1625,34 +1970,45 @@ with st.expander(
 
     st.markdown(
         """
-        A simulação utiliza a mesma estrutura de cálculo do
-        **Índice de Qualidade da Educação (IQE)** empregada na
-        base educacional utilizada pelo projeto.
+        A simulação utiliza os dados educacionais empregados no
+        cálculo do IQE como cenário de referência.
 
-        O processo é realizado em etapas:
+        **1. Cenário observado**
 
-        1. O usuário define alterações hipotéticas nos indicadores
-        educacionais do município selecionado.
+        Inicialmente, o IQE é recalculado utilizando os dados
+        observados dos 184 municípios.
 
-        2. São recalculados o **IQA**, o **IQF do 5º ano**, o
-        **IQF do 9º ano**, o indicador de aprovação e os demais
-        componentes necessários à obtenção do IQE.
+        **2. Alteração dos indicadores**
 
-        3. Como os indicadores possuem natureza relativa, o cálculo
-        é realizado novamente considerando os **184 municípios**.
+        Para o município selecionado, o usuário pode alterar
+        parâmetros relacionados ao IQA, IQF5, IQF9 e aprovação.
 
-        4. O novo IQE determina um novo componente de Educação.
+        **3. Recalculo dos 184 municípios**
 
-        5. Para o cenário financeiro, os componentes de **VAF,
-        Saúde e Meio Ambiente são mantidos constantes**.
+        Como os indicadores possuem natureza relativa, o cálculo
+        é realizado novamente considerando todos os municípios.
 
-        6. A diferença do componente Educação é incorporada ao
-        índice geral utilizado na simulação.
+        **4. Novo componente Educação**
 
-        7. O índice simulado é aplicado às mesmas bases mensais de
-        ICMS utilizadas no cálculo do cenário observado.
+        O novo IQE determina uma nova participação no componente
+        de Educação.
 
-        Dessa forma, é possível estimar o impacto financeiro
+        **5. Demais componentes constantes**
+
+        No cenário financeiro, VAF, Saúde e Meio Ambiente são
+        mantidos constantes.
+
+        **6. Novo índice geral**
+
+        A diferença produzida no componente Educação é incorporada
+        ao índice geral do município.
+
+        **7. Impacto financeiro**
+
+        O índice simulado é aplicado às mesmas bases mensais de
+        ICMS utilizadas no cenário observado.
+
+        Dessa forma, a aplicação estima o impacto financeiro
         associado exclusivamente ao cenário educacional definido
         pelo usuário.
         """
@@ -1671,47 +2027,43 @@ with st.expander(
         """
         **Índices municipais de participação**
 
-        Os índices de participação utilizados pela aplicação são
-        provenientes dos dados oficiais publicados pela Secretaria
-        da Fazenda do Estado do Ceará (SEFAZ-CE) para aplicação
-        no exercício de 2026.
+        Os índices utilizados pela aplicação são provenientes dos
+        dados oficiais publicados pela Secretaria da Fazenda do
+        Estado do Ceará para aplicação no exercício de 2026.
 
         **Valor Adicionado Fiscal (VAF)**
 
-        Os valores de VAF de 2023 e 2024, a média do VAF e o
-        respectivo componente do índice são provenientes da tabela
-        oficial de índices municipais utilizada para 2026.
+        Os valores de VAF de 2023 e 2024, a média do VAF e seu
+        componente são provenientes da tabela oficial utilizada
+        na formação dos índices municipais de 2026.
 
         **Educação, Saúde e Meio Ambiente**
 
-        Os componentes referentes à Educação, Saúde e Meio Ambiente
-        são obtidos diretamente da tabela oficial de composição dos
+        Os componentes são obtidos da composição oficial dos
         índices municipais.
 
         **Base educacional**
 
-        A simulação utiliza a base de dados empregada no cálculo
-        do IQE, incluindo informações relacionadas ao IQA, IQF do
-        5º ano, IQF do 9º ano, aprovação e indicador socioeconômico.
+        A simulação utiliza a base empregada no cálculo do IQE,
+        incluindo IQA, IQF do 5º ano, IQF do 9º ano, aprovação e
+        indicador socioeconômico.
 
         **Base mensal do ICMS**
 
         A base utilizada no cálculo é extraída dos demonstrativos
-        mensais da SEFAZ-CE, no campo
-        `ICMS BASE DE CÁLCULO MUNICÍPIOS (100%)`.
+        mensais da SEFAZ-CE.
 
         **Repasses realizados**
 
-        Os valores apresentados na seção de comparação correspondem
-        aos repasses mensais publicados pela SEFAZ-CE. Esses valores
-        são utilizados para validação e comparação com o resultado
-        calculado pela aplicação.
+        Os valores apresentados na comparação correspondem aos
+        repasses mensais publicados pela SEFAZ-CE e são utilizados
+        para comparação com o resultado calculado pela aplicação.
         """
     )
 
 
 # ==================================================
-# OBSERVAÇÃO
+# OBSERVAÇÃO FINAL
 # ==================================================
 
 st.caption(
